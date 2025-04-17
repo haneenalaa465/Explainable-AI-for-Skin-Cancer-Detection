@@ -47,8 +47,20 @@ conda activate Explainable-AI-for-Skin-Cancer-Detection  # or source venv/bin/ac
 ```bash
 make requirements
 ```
+4. Prepare Kaggle API:
+   1. Create a Kaggle account if you don't have one already
+   2. Go to your Kaggle account settings (https://www.kaggle.com/settings)
+   3. Scroll down to "API" section and click "Create New API Token"
+   4. This will download a `kaggle.json` file
+   5. Create the Kaggle directory and move the file:
 
-4. Download and prepare the dataset:
+   ```bash
+   mkdir -p ~/.kaggle
+   mv /path/to/downloaded/kaggle.json ~/.kaggle/
+   chmod 600 ~/.kaggle/kaggle.json  # Set proper permissions
+   ```
+   
+5. Download and prepare the dataset:
 ```bash
 make data
 ```
