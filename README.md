@@ -1,4 +1,4 @@
-# Skin Lesion Classification with Explainable AI
+# Explainable AI for Skin Cancer Detection
 
 This project leverages machine learning and deep learning techniques for automated skin cancer classification using the HAM10000 dataset. It emphasizes model interpretability through Explainable AI (XAI) methods such as Grad-CAM, SHAP, and LIME, addressing the critical research gap in transparency and trustworthiness of AI-driven medical diagnostics.
 
