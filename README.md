@@ -1,4 +1,4 @@
-# Skin Lesion Classification with Explainable AI
+# Explainable AI for Skin Cancer Detection
 
 This project leverages machine learning and deep learning techniques for automated skin cancer classification using the HAM10000 dataset. It emphasizes model interpretability through Explainable AI (XAI) methods such as Grad-CAM, SHAP, and LIME, addressing the critical research gap in transparency and trustworthiness of AI-driven medical diagnostics.
 
@@ -33,14 +33,14 @@ This project uses the HAM10000 ("Human Against Machine with 10000 training image
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/your-username/skin-lesion-xai.git
-cd skin-lesion-xai
+git clone https://github.com/haneenalaa465/Explainable-AI-for-Skin-Cancer-Detection.git
+cd Explainable-AI-for-Skin-Cancer-Detection
 ```
 
 2. Create and activate a virtual environment:
 ```bash
 make create_environment
-conda activate skin-lesion-xai  # or source venv/bin/activate
+conda activate Explainable-AI-for-Skin-Cancer-Detection  # or source venv/bin/activate
 ```
 
 3. Install dependencies:
