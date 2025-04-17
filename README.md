@@ -1,6 +1,6 @@
 # Skin Lesion Classification with Explainable AI
 
-This repository implements the convolutional neural network architecture described in the paper "[Skin lesion classification of dermoscopic images using machine learning and convolutional neural network](https://doi.org/10.1038/s41598-022-22644-9)" and extends it with explainable AI techniques (LIME and SHAP) to provide insights into model predictions.
+This project leverages machine learning and deep learning techniques for automated skin cancer classification using the HAM10000 dataset. It emphasizes model interpretability through Explainable AI (XAI) methods such as Grad-CAM, SHAP, and LIME, addressing the critical research gap in transparency and trustworthiness of AI-driven medical diagnostics.
 
 ## Project Overview
 
@@ -15,36 +15,11 @@ The implemented CNN model can classify dermoscopic images into seven categories:
 6. Melanocytic Nevi (nv)
 7. Vascular Lesions (vasc)
 
-## Features
-
-- Implementation of the CNN architecture from the paper
-- Data augmentation techniques to handle class imbalance
-- Feature extraction (color, shape, texture features)
-- Transfer learning capabilities
-- Explainable AI techniques:
-  - LIME (Local Interpretable Model-agnostic Explanations)
-  - SHAP (SHapley Additive exPlanations)
-- Comprehensive visualization tools
 
 ## Dataset
 
 This project uses the HAM10000 ("Human Against Machine with 10000 training images") dataset, which consists of 10,015 dermatoscopic images of pigmented skin lesions. The dataset was split into training, validation, and test sets with stratified sampling to maintain class distribution.
 
-## Model Architecture
-
-The implemented CNN architecture consists of:
-- Conv2D (32 filters, 3×3 filter size, ReLU activation, batch normalization)
-- MaxPool2D (3×3 pool size)
-- Dropout (0.25)
-- Two Conv2D layers (64 filters each, 3×3)
-- MaxPool2D (2×2 pool size)
-- Dropout (0.25)
-- Two Conv2D layers (128 filters each, 3×3)
-- MaxPool2D (2×2 pool size)
-- Dropout (0.25)
-- Dense layer (1024 units, ReLU activation, batch normalization)
-- Dropout (0.5)
-- Output layer (7 units, softmax activation)
 
 ## Getting Started
 
