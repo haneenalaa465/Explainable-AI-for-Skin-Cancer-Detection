@@ -1,9 +1,10 @@
 # Data
 /data/
-
+*.pth
 # Mac OS-specific storage files
 .DS_Store
 
+/runs
 # vim
 *.swp
 *.swo

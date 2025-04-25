@@ -7,9 +7,11 @@
 #################################################################################
 
 PYTHON_INTERPRETER = python3
-PROJECT_NAME = skin-lesion-xai
+PROJECT_NAME = Explainable-AI-for-Skin-Cancer-Detection
 PROJECT_DIR = $(shell pwd)
 VENV_DIR = $(PROJECT_DIR)/venv
+
+model_idx?= -1
 
 ifeq (,$(shell which conda))
 	HAS_CONDA=False
@@ -40,7 +42,7 @@ data: download_data organize_data extract_features
 
 ## Train Model
 train:
-	$(PYTHON_INTERPRETER) -c "from XAI.modeling.train import main; main()"
+	$(PYTHON_INTERPRETER) -c "from XAI.modeling.train import main; main($(model_idx))"
 
 ## Explain Model Predictions
 explain:
