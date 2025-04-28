@@ -11,6 +11,9 @@ class ResizedModel(nn.Module):
         )
         self.model = original_model
 
+    def name(self):
+        return self.model.name()
+
     def forward(self, x):
 
         x = self.resize(x)

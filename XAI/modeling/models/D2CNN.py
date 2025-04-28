@@ -132,7 +132,7 @@ class D2CNN(BaseModel):
         self.fa_n_components = fa_n_components
 
         # Fully connected classifier
-        self.fc1 = nn.Linear(pca_n_components + fa_n_components, 256)
+        self.fc1 = nn.Linear(64, 256)
         self.dropout1 = nn.Dropout(0.2)
         self.fc2 = nn.Linear(256, 128)
         self.dropout2 = nn.Dropout(0.2)
@@ -164,15 +164,20 @@ class D2CNN(BaseModel):
         # Apply PCA to features from first and second CNNs
         if self.pca is None:
             combined_features = np.concatenate([features1_np, features2_np], axis=1)
-            self.pca = PCA(n_components=self.pca_n_components)
+            n_components = min(
+                self.pca_n_components, combined_features.shape[0], combined_features.shape[1]
+            )
+            self.pca = PCA(n_components=n_components)
             self.pca.fit(combined_features)
-
         pca_features = self.pca.transform(np.concatenate([features1_np, features2_np], axis=1))
 
         # Apply FA to features from third and fourth CNNs
         if self.fa is None:
             combined_fa_features = np.concatenate([features3_np, features4_np], axis=1)
-            self.fa = FactorAnalysis(n_components=self.fa_n_components)
+            n_components_fa = min(
+                self.fa_n_components, combined_fa_features.shape[0], combined_fa_features.shape[1]
+            )
+            self.fa = FactorAnalysis(n_components=n_components_fa)
             self.fa.fit(combined_fa_features)
 
         fa_features = self.fa.transform(np.concatenate([features3_np, features4_np], axis=1))
@@ -180,6 +185,10 @@ class D2CNN(BaseModel):
         # Combine reduced features
         combined_features = np.concatenate([pca_features, fa_features], axis=1)
 
+        # Remove constant columns before correlation calculation
+        stddev = np.std(combined_features, axis=0)
+        combined_features = combined_features[:, stddev > 0]
+        
         # Remove duplicate features using correlation matrix
         corr_matrix = np.corrcoef(combined_features, rowvar=False)
         upper_tri = np.triu(np.ones_like(corr_matrix, dtype=bool), k=1)
@@ -195,9 +204,25 @@ class D2CNN(BaseModel):
         if to_drop:
             combined_features = np.delete(combined_features, to_drop, axis=1)
 
-        # Convert back to tensor
+        print (combined_features, combined_features.shape)
         combined_features = torch.from_numpy(combined_features).float().to(x.device)
+        if combined_features.shape[1] != 64:
+            # Calculate how many zeros need to be added
+            current_size = combined_features.shape[1]
 
+            if current_size > 64:
+                # Truncate extra features
+                combined_features = combined_features[:, :64]
+
+            elif current_size < 64:
+                padding_size = 64 - combined_features.shape[1]
+
+                # Create a tensor of zeros with the required padding size
+                padding = torch.zeros(combined_features.shape[0], padding_size).to(x.device)
+                # Concatenate the padding to the end of the combined_features tensor
+                combined_features = torch.cat([combined_features, padding], dim=1)
+
+        # print(combined_features.shape)
         # Fully connected classifier
         x = F.relu(self.fc1(combined_features))
         x = self.dropout1(x)

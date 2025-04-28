@@ -15,14 +15,14 @@ class ModifiedInceptionV3(BaseModel):
             param.requires_grad = False
 
         self.base_model.fc = nn.Sequential(
-            nn.AdaptiveAvgPool2d((1, 1)),
-            nn.Flatten(),
             nn.Linear(self.base_model.fc.in_features, 1024),
             nn.ReLU(),
             nn.Dropout(0.5),
             nn.Linear(1024, num_classes),
-            nn.Softmax(dim=1),
         )
+
+        for param in self.base_model.fc.parameters():
+            param.requires_grad = True
 
     @staticmethod
     def name():

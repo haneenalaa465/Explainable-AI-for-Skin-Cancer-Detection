@@ -30,8 +30,7 @@ class CustomCNN(BaseModel):
             nn.Linear(128 * 28 * 28, 256),
             nn.ReLU(),
             nn.Dropout(0.5),
-            nn.Linear(256, num_classes),
-            nn.Softmax(dim=1),
+            nn.Linear(256, num_classes)
         )
     @staticmethod
     def name():

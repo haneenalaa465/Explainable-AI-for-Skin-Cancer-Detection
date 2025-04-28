@@ -72,6 +72,14 @@ To train the model:
 make train
 ```
 
+To train a specific model use `model_idx` parameter 
+```bash
+make train model_idx=0
+```
+Refer to 
+https://github.com/haneenalaa465/Explainable-AI-for-Skin-Cancer-Detection/blob/815493b26b428c8a908b22362bf4c573dbf2f841/XAI/modeling/AllModels.py#L11-L17
+
+
 ### Making Predictions with Explanations
 
 To make predictions and get explanations:

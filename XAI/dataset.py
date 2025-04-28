@@ -153,7 +153,7 @@ def get_transforms(stage="train"):
     if stage == "train":
         return v2.Compose(
             [
-                HairRemoval(),
+                # HairRemoval(),
                 # CLAHE(),
                 v2.ToImage(),  # If using tensor transforms afterwards
                 v2.RandomHorizontalFlip(p=0.5),

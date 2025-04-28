@@ -31,6 +31,7 @@ from XAI.dataset import prepare_data
 
 from XAI.modeling.ResizeLayer import ResizedModel
 from XAI.modeling.AllModels import models, device
+import datetime
 
 
 def set_seed(seed=RANDOM_SEED):
@@ -53,7 +54,7 @@ def train_model(
     scheduler,
     device,
     num_epochs=NUM_EPOCHS,
-    model_save_path=None,
+    model_save=None,
     regularizer_fn=None,
 ):
     """
@@ -74,7 +75,7 @@ def train_model(
         tuple: Trained model and dictionary with training history
     """
     # Initialize tensorboard writer
-    writer = SummaryWriter(f"./runs/{model.name()}")
+    writer = SummaryWriter(f"./runs/{model.name()}-{datetime.datetime.now()}")
 
     # Initialize variables to track training progress
     best_val_loss = float("inf")
@@ -99,8 +100,8 @@ def train_model(
             optimizer.zero_grad()
 
             # # Create a grid of images and write to TensorBoard
-            # img_grid = torchvision.utils.make_grid(inputs.cpu())
-            # writer.add_image("train_images", img_grid,global_step = epoch)
+            img_grid = torchvision.utils.make_grid(inputs.cpu())
+            writer.add_image("train_images", img_grid, global_step=epoch)
 
             # Forward pass
             outputs = model(inputs)
@@ -162,7 +163,12 @@ def train_model(
         # Save best model
         if val_acc > best_val_acc:
             best_val_acc = val_acc
-            if model_save_path:
+            if model_save:
+
+                model_save_dir = (
+                    MODELS_DIR / f"{model.name()}-{round(val_acc,4)}-e{epoch}-{datetime.datetime.now()}.pth"
+                )
+
                 torch.save(
                     {
                         "epoch": epoch,
@@ -171,9 +177,9 @@ def train_model(
                         "val_loss": val_loss,
                         "val_acc": val_acc,
                     },
-                    model_save_path,
+                    model_save_dir,
                 )
-                print(f"Model saved to {model_save_path}")
+                print(f"Model saved to {model_save_dir}")
 
     # Calculate training time
     time_elapsed = time.time() - start_time
@@ -184,8 +190,8 @@ def train_model(
     writer.close()
 
     # Load best model
-    if model_save_path and os.path.exists(model_save_path):
-        checkpoint = torch.load(model_save_path)
+    if model_save and os.path.exists(model_save):
+        checkpoint = torch.load(model_save)
         model.load_state_dict(checkpoint["model_state_dict"])
 
     return model, history
@@ -381,8 +387,6 @@ def main(model_idx=-1):
         # Create directory for saving model
         os.makedirs(MODELS_DIR, exist_ok=True)
 
-        model_save_path = MODELS_DIR / f"{currentModel.name()}.pth"
-
         # Train model
         currentModel, currentHistory = train_model(
             currentModel,
@@ -393,13 +397,13 @@ def main(model_idx=-1):
             scheduler,
             device,
             num_epochs=NUM_EPOCHS,
-            model_save_path=model_save_path,
+            model_save=True,
         )
         model.append(currentModel)
         history.append(currentHistory)
 
         # Plot training history
-        history_plot_path = FIGURES_DIR / f"training_{currentModel.name()}_history.png"
+        history_plot_path = FIGURES_DIR / f"training_{models[i].name()}_history.png"
         plot_training_history(currentHistory, save_path=history_plot_path)
 
         # Test model
