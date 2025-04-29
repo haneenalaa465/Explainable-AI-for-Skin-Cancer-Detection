@@ -190,8 +190,8 @@ def train_model(
     writer.close()
 
     # Load best model
-    if model_save and os.path.exists(model_save):
-        checkpoint = torch.load(model_save)
+    if model_save and os.path.exists(model_save_dir):
+        checkpoint = torch.load(model_save_dir)
         model.load_state_dict(checkpoint["model_state_dict"])
 
     return model, history
