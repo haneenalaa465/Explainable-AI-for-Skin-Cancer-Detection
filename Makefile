@@ -6,7 +6,7 @@
 # GLOBALS                                                                       #
 #################################################################################
 
-PYTHON_INTERPRETER = python3
+PYTHON_INTERPRETER = python
 PROJECT_NAME = Explainable-AI-for-Skin-Cancer-Detection
 PROJECT_DIR = $(shell pwd)
 VENV_DIR = $(PROJECT_DIR)/venv

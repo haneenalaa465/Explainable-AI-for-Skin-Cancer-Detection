@@ -17,6 +17,7 @@ from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 from XAI.preprocessing.C_LAHE import CLAHE
 from XAI.preprocessing.hair_removal import HairRemoval
+from XAI.preprocessing.contrast_stretch import ContrastStretch
 from skimage import io
 
 from XAI.config import (
@@ -155,6 +156,7 @@ def get_transforms(stage="train"):
             [
                 # HairRemoval(),
                 # CLAHE(),
+                # ContrastStretch(),
                 v2.ToImage(),  # If using tensor transforms afterwards
                 v2.RandomHorizontalFlip(p=0.5),
                 v2.RandomVerticalFlip(p=0.5),
@@ -262,3 +264,4 @@ if __name__ == "__main__":
     # If run as a script, download and organize the dataset
     download_and_extract_ham10000()
     organize_data()
+    prepare_data()
