@@ -56,6 +56,7 @@ def train_model(
     num_epochs=NUM_EPOCHS,
     model_save=None,
     regularizer_fn=None,
+    is_binary=False,
     start_epoch=0,
     best_val_acc=0.0,  # Add parameter to track best accuracy from previous runs
 ):
@@ -99,6 +100,9 @@ def train_model(
         for inputs, labels in pbar:
             inputs, labels = inputs.to(device), labels.to(device)
 
+            if is_binary:
+                labels = labels.view(-1, 1).float()  # <- This line is crucial
+
             # Zero the parameter gradients
             optimizer.zero_grad()
 
@@ -133,7 +137,7 @@ def train_model(
         train_acc = train_correct / train_total
 
         # Evaluate on validation set
-        val_loss, val_acc = evaluate_model(model, val_loader, criterion, device)
+        val_loss, val_acc = evaluate_model(model, val_loader, criterion, device, is_binary)
 
         # Adjust learning rate
         current_lr = optimizer.param_groups[0]["lr"]
@@ -168,7 +172,8 @@ def train_model(
             best_val_acc = val_acc
             if model_save:
                 model_save_dir = (
-                    MODELS_DIR / f"{model.name()}-{round(val_acc,4)}-e{epoch}-{datetime.datetime.now()}.pth"
+                    MODELS_DIR
+                    / f"{model.name()}-{round(val_acc,4)}-e{epoch}-{datetime.datetime.now()}.pth"
                 )
 
                 torch.save(
@@ -194,7 +199,7 @@ def train_model(
     return model, history
 
 
-def evaluate_model(model, data_loader, criterion, device):
+def evaluate_model(model, data_loader, criterion, device, is_binary):
     """
     Evaluate the model on the provided data loader.
 
@@ -215,6 +220,8 @@ def evaluate_model(model, data_loader, criterion, device):
     with torch.no_grad():
         for inputs, labels in data_loader:
             inputs, labels = inputs.to(device), labels.to(device)
+            if is_binary:
+                labels = labels.view(-1, 1).float()  # <- This line is crucial
 
             # Forward pass
             outputs = model(inputs)
@@ -405,10 +412,13 @@ def main(model_idx=-1):
     """Main function to train the model."""
     # Set random seed for reproducibility
     set_seed()
+    isBinary = False
+    # if model_idx == 4:
+    #     isBinary = True
 
     # Prepare data
-    train_loader, val_loader, test_loader = prepare_data()
-    criterion = nn.CrossEntropyLoss()
+    train_loader, val_loader, test_loader = prepare_data(is_binary=isBinary)
+    criterion = nn.BCEWithLogitsLoss() if isBinary else nn.CrossEntropyLoss()
     model = []
     history = []
     test_results = []
@@ -436,6 +446,7 @@ def main(model_idx=-1):
         
         # Define loss function and optimizer
         optimizerModel = optim.Adam(currentModel.parameters(), lr=LEARNING_RATE)
+        # optimizerModel = optim.SGD(currentModel.parameters(), lr=LEARNING_RATE)
         
         # Load optimizer state if available
         if checkpoint is not None and 'optimizer_state_dict' in checkpoint:
@@ -444,7 +455,7 @@ def main(model_idx=-1):
 
         # Define learning rate scheduler
         scheduler = ReduceLROnPlateau(
-            optimizerModel, mode="min", factor=0.5, patience=5, min_lr=LR_MIN
+            optimizerModel, mode="min", factor=0.5, patience=15, min_lr=LR_MIN
         )
         
         # Train the model, starting from the checkpoint if available
@@ -458,6 +469,7 @@ def main(model_idx=-1):
             device,
             num_epochs=NUM_EPOCHS,
             model_save=True,
+            is_binary=isBinary,
             start_epoch=start_epoch,
             best_val_acc=best_val_acc,  # Pass the best accuracy from previous runs
         )

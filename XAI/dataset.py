@@ -16,6 +16,7 @@ from albumentations.pytorch import ToTensorV2
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 from XAI.preprocessing.C_LAHE import CLAHE
+from XAI.preprocessing.enhance_clarity import EnhanceClarityCV
 from XAI.preprocessing.hair_removal import HairRemoval
 from XAI.preprocessing.contrast_stretch import ContrastStretch
 from skimage import io
@@ -104,7 +105,7 @@ def organize_data():
 class HAM10000Dataset(Dataset):
     """HAM10000 dataset class for PyTorch."""
 
-    def __init__(self, df, img_dir, transform=None):
+    def __init__(self, df, img_dir, transform=None, is_binary=False):
         """
         Args:
             df (pandas.DataFrame): DataFrame with image info
@@ -114,6 +115,7 @@ class HAM10000Dataset(Dataset):
         self.df = df
         self.img_dir = img_dir
         self.transform = transform
+        self.is_binary = is_binary
 
         # Create a mapping from class names to indices
         self.class_to_idx = {class_name: idx for idx, class_name in enumerate(CLASS_NAMES.keys())}
@@ -133,6 +135,12 @@ class HAM10000Dataset(Dataset):
         image = io.imread(img_path)
         # Get class index
         label = self.class_to_idx[dx]
+
+        if self.is_binary:
+            if label == 4 or label == 1:
+                label = 1
+            else:
+                label = 0
 
         if self.transform:
 
@@ -156,6 +164,7 @@ def get_transforms(stage="train"):
             [
                 # HairRemoval(),
                 # CLAHE(),
+                # EnhanceClarityCV(),
                 # ContrastStretch(),
                 v2.ToImage(),  # If using tensor transforms afterwards
                 v2.RandomHorizontalFlip(p=0.5),
@@ -169,6 +178,7 @@ def get_transforms(stage="train"):
     else:  # val or test
         return v2.Compose(
             [
+                # HairRemoval(),
                 v2.ToImage(),  # If using tensor transforms afterwards
                 v2.ToDtype(torch.float32, scale=True),
                 v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
@@ -176,7 +186,7 @@ def get_transforms(stage="train"):
         )
 
 
-def prepare_data(metadata_path=None, balanced=True):
+def prepare_data(metadata_path=None, balanced=True, is_binary=False):
     """
     Prepare train, validation, and test datasets.
 
@@ -235,26 +245,46 @@ def prepare_data(metadata_path=None, balanced=True):
 
     # Create datasets
     train_dataset = HAM10000Dataset(
-        train_df, HAM10000_IMAGES_PART1, transform=get_transforms("train")
+        train_df,
+        HAM10000_IMAGES_PART1,
+        transform=get_transforms("train"),
+        is_binary=is_binary,
     )
 
-    val_dataset = HAM10000Dataset(val_df, HAM10000_IMAGES_PART1, transform=get_transforms("val"))
+    val_dataset = HAM10000Dataset(
+        val_df, HAM10000_IMAGES_PART1, transform=get_transforms("val"), is_binary=is_binary
+    )
 
     test_dataset = HAM10000Dataset(
-        test_df, HAM10000_IMAGES_PART1, transform=get_transforms("test")
+        test_df,
+        HAM10000_IMAGES_PART1,
+        transform=get_transforms("test"),
+        is_binary=is_binary,
     )
 
     # Create data loaders
     train_loader = DataLoader(
-        train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4, pin_memory=True
+        train_dataset,
+        batch_size=BATCH_SIZE,
+        shuffle=True,
+        num_workers=4,
+        pin_memory=True,
     )
 
     val_loader = DataLoader(
-        val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4, pin_memory=True
+        val_dataset,
+        batch_size=BATCH_SIZE,
+        shuffle=False,
+        num_workers=4,
+        pin_memory=True,
     )
 
     test_loader = DataLoader(
-        test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4, pin_memory=True
+        test_dataset,
+        batch_size=BATCH_SIZE,
+        shuffle=False,
+        num_workers=4,
+        pin_memory=True,
     )
 
     return train_loader, val_loader, test_loader

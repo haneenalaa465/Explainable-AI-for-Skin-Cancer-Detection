@@ -29,7 +29,7 @@ HAM10000_IMAGES_PART2 = RAW_DATA_DIR / "HAM10000_images_part_2"
 # Model parameters
 MODEL_INPUT_SIZE = (224, 224)
 BATCH_SIZE = 32
-NUM_EPOCHS = 150
+NUM_EPOCHS = 20
 LEARNING_RATE = 0.001
 LR_MIN = 0.00001
 
@@ -43,6 +43,8 @@ CLASS_NAMES = {
     'nv': 'Melanocytic Nevi',
     'vasc': 'Vascular Lesions'
 }
+
+# melanoma 4 , basal cell carcinoma 1 , and squamous cell carcinoma
 
 NUM_CLASSES = len(CLASS_NAMES)
 
