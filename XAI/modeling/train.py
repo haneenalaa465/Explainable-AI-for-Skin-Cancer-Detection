@@ -56,6 +56,8 @@ def train_model(
     num_epochs=NUM_EPOCHS,
     model_save=None,
     regularizer_fn=None,
+    start_epoch=0,
+    best_val_acc=0.0,  # Add parameter to track best accuracy from previous runs
 ):
     """
     Train the model.
@@ -70,6 +72,8 @@ def train_model(
         device: Device to run the model on
         num_epochs: Number of epochs to train for
         model_save_path: Path to save the best model
+        start_epoch: Epoch to start training from
+        best_val_acc: Best validation accuracy from previous runs
 
     Returns:
         tuple: Trained model and dictionary with training history
@@ -79,12 +83,11 @@ def train_model(
 
     # Initialize variables to track training progress
     best_val_loss = float("inf")
-    best_val_acc = 0.0
     history = {"train_loss": [], "train_acc": [], "val_loss": [], "val_acc": [], "lr": []}
 
     # Start training
     start_time = time.time()
-    for epoch in range(num_epochs):
+    for epoch in range(start_epoch, num_epochs):
         # Set model to training mode
         model.train()
         train_loss = 0.0
@@ -99,7 +102,7 @@ def train_model(
             # Zero the parameter gradients
             optimizer.zero_grad()
 
-            # # Create a grid of images and write to TensorBoard
+            # Create a grid of images and write to TensorBoard
             img_grid = torchvision.utils.make_grid(inputs.cpu())
             writer.add_image("train_images", img_grid, global_step=epoch)
 
@@ -164,7 +167,6 @@ def train_model(
         if val_acc > best_val_acc:
             best_val_acc = val_acc
             if model_save:
-
                 model_save_dir = (
                     MODELS_DIR / f"{model.name()}-{round(val_acc,4)}-e{epoch}-{datetime.datetime.now()}.pth"
                 )
@@ -188,11 +190,6 @@ def train_model(
 
     # Close tensorboard writer
     writer.close()
-
-    # Load best model
-    if model_save and os.path.exists(model_save_dir):
-        checkpoint = torch.load(model_save_dir)
-        model.load_state_dict(checkpoint["model_state_dict"])
 
     return model, history
 
@@ -428,12 +425,14 @@ def main(model_idx=-1):
         # Check if we have a saved model and load it
         best_model_path, checkpoint = load_best_model(models[i].name())
         start_epoch = 0
+        best_val_acc = 0.0
         
         if checkpoint is not None:
             # Load model weights
             currentModel.load_state_dict(checkpoint['model_state_dict'])
-            start_epoch = checkpoint['epoch'] + 1
-            print(f"Resuming training from epoch {start_epoch}")
+            start_epoch = checkpoint['epoch'] + 1  # Start from the next epoch
+            best_val_acc = checkpoint['val_acc']  # Use the saved validation accuracy
+            print(f"Resuming training from epoch {start_epoch} with best validation accuracy: {best_val_acc:.4f}")
         
         # Define loss function and optimizer
         optimizerModel = optim.Adam(currentModel.parameters(), lr=LEARNING_RATE)
@@ -447,8 +446,8 @@ def main(model_idx=-1):
         scheduler = ReduceLROnPlateau(
             optimizerModel, mode="min", factor=0.5, patience=5, min_lr=LR_MIN
         )
-
-        # Modify the train_model function call to include start_epoch
+        
+        # Train the model, starting from the checkpoint if available
         currentModel, currentHistory = train_model(
             currentModel,
             train_loader,
@@ -460,6 +459,7 @@ def main(model_idx=-1):
             num_epochs=NUM_EPOCHS,
             model_save=True,
             start_epoch=start_epoch,
+            best_val_acc=best_val_acc,  # Pass the best accuracy from previous runs
         )
         model.append(currentModel)
         history.append(currentHistory)
