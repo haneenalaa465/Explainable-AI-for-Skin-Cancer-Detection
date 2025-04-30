@@ -359,6 +359,51 @@ def plot_training_history(history, save_path=None):
     plt.show()
 
 
+def load_best_model(model_name):
+    """
+    Load the best saved model for the given model name.
+    
+    Args:
+        model_name: Name of the model to load
+        
+    Returns:
+        tuple: Path to the best model checkpoint and the checkpoint data, or (None, None) if no checkpoint found
+    """
+    model_dir = MODELS_DIR
+    if not model_dir.exists():
+        return None, None
+        
+    # Get all model files for this model
+    model_files = list(model_dir.glob(f"{model_name}*.pth"))
+    
+    if not model_files:
+        return None, None
+    
+    # Sort by validation accuracy (extracted from filename)
+    # Format is: {model_name}-{val_acc}-e{epoch}-{timestamp}.pth
+    def get_val_acc(filepath):
+        try:
+            # Extract the validation accuracy from the filename
+            parts = filepath.stem.split('-')
+            # The validation accuracy should be the second part
+            if len(parts) >= 2:
+                return float(parts[1])
+            return 0.0
+        except:
+            return 0.0
+    
+    model_files.sort(key=get_val_acc, reverse=True)
+    
+    # Load the best model (highest validation accuracy)
+    best_model_path = model_files[0]
+    checkpoint = torch.load(best_model_path)
+    
+    print(f"Found best model checkpoint: {best_model_path}")
+    print(f"Validation accuracy: {get_val_acc(best_model_path):.4f}, Epoch: {checkpoint['epoch']}")
+    
+    return best_model_path, checkpoint
+
+
 def main(model_idx=-1):
     """Main function to train the model."""
     # Set random seed for reproducibility
@@ -370,24 +415,40 @@ def main(model_idx=-1):
     model = []
     history = []
     test_results = []
+    
+    # Create directory for saving model
+    os.makedirs(MODELS_DIR, exist_ok=True)
+    
     for i in range(
         0 if model_idx == -1 else model_idx, len(models) if model_idx == -1 else model_idx + 1
     ):
         print(f"Training Model {models[i].name()} with input size {models[i].inputSize()}")
         currentModel = ResizedModel(models[i].inputSize(), models[i]()).to(device)
-
+        
+        # Check if we have a saved model and load it
+        best_model_path, checkpoint = load_best_model(models[i].name())
+        start_epoch = 0
+        
+        if checkpoint is not None:
+            # Load model weights
+            currentModel.load_state_dict(checkpoint['model_state_dict'])
+            start_epoch = checkpoint['epoch'] + 1
+            print(f"Resuming training from epoch {start_epoch}")
+        
         # Define loss function and optimizer
         optimizerModel = optim.Adam(currentModel.parameters(), lr=LEARNING_RATE)
+        
+        # Load optimizer state if available
+        if checkpoint is not None and 'optimizer_state_dict' in checkpoint:
+            optimizerModel.load_state_dict(checkpoint['optimizer_state_dict'])
+            print("Loaded optimizer state")
 
         # Define learning rate scheduler
         scheduler = ReduceLROnPlateau(
             optimizerModel, mode="min", factor=0.5, patience=5, min_lr=LR_MIN
         )
 
-        # Create directory for saving model
-        os.makedirs(MODELS_DIR, exist_ok=True)
-
-        # Train model
+        # Modify the train_model function call to include start_epoch
         currentModel, currentHistory = train_model(
             currentModel,
             train_loader,
@@ -398,6 +459,7 @@ def main(model_idx=-1):
             device,
             num_epochs=NUM_EPOCHS,
             model_save=True,
+            start_epoch=start_epoch,
         )
         model.append(currentModel)
         history.append(currentHistory)
