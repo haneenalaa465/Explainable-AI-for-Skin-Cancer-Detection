@@ -147,13 +147,17 @@ def extract_glcm_features(image, distances=[1], angles=[0, np.pi/4, np.pi/2, 3*n
     else:
         gray = image
     
-    # Quantize the image into 8 levels
-    bins = np.linspace(0, 255, 9)
-    quantized = np.digitize(gray, bins) - 1
+    # Quantize the image to levels 0-7 (8 levels total)
+    levels = 8
+    max_value = 256
+    gray = (gray / max_value * levels).astype(np.uint8)
+    
+    # Make sure all values are within range (0 to levels-1)
+    gray = np.clip(gray, 0, levels-1)
     
     # Calculate GLCM
-    glcm = graycomatrix(quantized, distances=distances, angles=angles, 
-                       levels=8, symmetric=True, normed=True)
+    glcm = graycomatrix(gray, distances=distances, angles=angles, 
+                       levels=levels, symmetric=True, normed=True)
     
     # Calculate GLCM properties
     properties = ['contrast', 'dissimilarity', 'homogeneity', 'energy', 'correlation', 'ASM']
