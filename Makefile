@@ -1,6 +1,6 @@
 ## XAI for Skin Lesion Classification - Makefile
 
-.PHONY: clean data lint download_data organize_data extract_features train explain test all
+.PHONY: clean data lint download_data organize_data extract_features train train_ml explain test all
 
 #################################################################################
 # GLOBALS                                                                       #
@@ -12,6 +12,7 @@ PROJECT_DIR = $(shell pwd)
 VENV_DIR = $(PROJECT_DIR)/venv
 
 model_idx?= -1
+ml_model_idx?= -1
 
 ifeq (,$(shell which conda))
 	HAS_CONDA=False
@@ -40,9 +41,13 @@ extract_features:
 
 data: download_data organize_data extract_features
 
-## Train Model
+## Train Deep Learning Model
 train:
 	$(PYTHON_INTERPRETER) -c "from XAI.modeling.train import main; main($(model_idx))"
+
+## Train Machine Learning Model
+train_ml:
+	$(PYTHON_INTERPRETER) -c "from XAI.modeling.train_ml import main; main($(ml_model_idx))"
 
 ## Explain Model Predictions
 explain:
