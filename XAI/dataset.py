@@ -71,33 +71,33 @@ def organize_data():
     print("Merging Directories")
 
     shutil.copytree(HAM10000_IMAGES_PART2, HAM10000_IMAGES_PART1, dirs_exist_ok=True)
-    # metadata = pd.read_csv(metadata_path)
+    metadata = pd.read_csv(metadata_path)
 
-    # # Create class directories
-    # organized_dir = INTERIM_DATA_DIR / "organized_by_class"
-    # for class_name in CLASS_NAMES.keys():
-    #     os.makedirs(organized_dir / class_name, exist_ok=True)
+    # Create class directories
+    organized_dir = INTERIM_DATA_DIR / "organized_by_class"
+    for class_name in CLASS_NAMES.keys():
+        os.makedirs(organized_dir / class_name, exist_ok=True)
 
-    # # Copy images to their respective class directories
-    # image_dirs = [HAM10000_IMAGES_PART1, HAM10000_IMAGES_PART2]
+    # Copy images to their respective class directories
+    image_dirs = [HAM10000_IMAGES_PART1, HAM10000_IMAGES_PART2]
 
-    # for _, row in tqdm(metadata.iterrows(), total=len(metadata)):
-    #     img_id = row['image_id']
-    #     dx = row['dx']  # Diagnosis/class
+    for _, row in tqdm(metadata.iterrows(), total=len(metadata)):
+        img_id = row['image_id']
+        dx = row['dx']  # Diagnosis/class
 
-    #     # Find the image
-    #     found = False
-    #     for img_dir in image_dirs:
-    #         img_path = img_dir / f"{img_id}.jpg"
-    #         if img_path.exists():
-    #             found = True
-    #             # Copy to class directory
-    #             dst_path = organized_dir / dx / f"{img_id}.jpg"
-    #             shutil.copy(img_path, dst_path)
-    #             break
+        # Find the image
+        found = False
+        for img_dir in image_dirs:
+            img_path = img_dir / f"{img_id}.jpg"
+            if img_path.exists():
+                found = True
+                # Copy to class directory
+                dst_path = organized_dir / dx / f"{img_id}.jpg"
+                shutil.copy(img_path, dst_path)
+                break
 
-    #     if not found:
-    #         print(f"Warning: Image {img_id} not found")
+        if not found:
+            print(f"Warning: Image {img_id} not found")
 
     print("Data organization complete!")
 
