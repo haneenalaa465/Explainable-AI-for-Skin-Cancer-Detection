@@ -4,7 +4,7 @@ from XAI.modeling.models.ML_Base_model import BaseMLModel
 class RFModel(BaseMLModel):
     """Random Forest model for skin lesion classification"""
     
-    def __init__(self, n_estimators=100, random_state=0):
+    def __init__(self, n_estimators=200, random_state=0):
         """
         Initialize the Random Forest model
         
