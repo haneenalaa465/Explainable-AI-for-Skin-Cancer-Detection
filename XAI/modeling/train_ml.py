@@ -124,7 +124,7 @@ def save_results(model, X_val, y_val, class_names, model_name):
         plt.savefig(REPORTS_DIR / "figures" / f"feature_importance_{model_name}.png")
 
 
-def main():
+def main(model_idx=-1):
     """Train machine learning models on extracted features"""
     # Load features
     features_path = PROCESSED_DATA_DIR / "ham10000_features.pkl"
@@ -187,12 +187,23 @@ def main():
         }
     ]
     
-    # Train models
-    for model_config in models_to_train:
+    # Train models based on model_idx
+    if model_idx == -1:
+        # Train all models
+        model_range = range(len(models_to_train))
+    else:
+        # Train specific model
+        if model_idx < 0 or model_idx >= len(models_to_train):
+            print(f"Error: model_idx {model_idx} is out of range. Available models: 0-{len(models_to_train)-1}")
+            return
+        model_range = range(model_idx, model_idx + 1)
+    
+    for idx in model_range:
+        model_config = models_to_train[idx]
         model_class = model_config['class']
         model_name = model_class.name()
         
-        print(f"\n=== Training {model_name} ===")
+        print(f"\n=== Training {model_name} (index: {idx}) ===")
         
         # Train model with or without grid search
         if model_config.get('use_grid_search', False):
