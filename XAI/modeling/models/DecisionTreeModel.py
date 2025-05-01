@@ -1,13 +1,26 @@
 from sklearn.tree import DecisionTreeClassifier
 from XAI.modeling.models.ML_Base_model import BaseMLModel
 
-
 class DTModel(BaseMLModel):
     """Decision Tree model for skin lesion classification"""
     
-    def __init__(self, max_depth=None, random_state=0):
-        self.model = DecisionTreeClassifier(max_depth=max_depth, random_state=random_state)
+    def __init__(self, max_depth=None, random_state=0, criterion='gini', **kwargs):
+        """
+        Initialize the Decision Tree model
         
+        Args:
+            max_depth: Maximum depth of the tree
+            random_state: Random state for reproducibility
+            criterion: Function to measure the quality of a split ('gini' or 'entropy')
+            **kwargs: Additional parameters to pass to DecisionTreeClassifier
+        """
+        self.model = DecisionTreeClassifier(
+            max_depth=max_depth, 
+            random_state=random_state,
+            criterion=criterion,
+            **kwargs
+        )
+    
     @staticmethod
     def name():
         return "DecisionTree"
