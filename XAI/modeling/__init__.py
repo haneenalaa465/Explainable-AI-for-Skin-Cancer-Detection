@@ -2,7 +2,14 @@
 Models module for skin lesion classification.
 """
 
-# from models.SkinLesionCNN import SkinLesionCNN
+# Import common modules
+from XAI.modeling.models.ML_Base_model import BaseMLModel
+from XAI.modeling.models.DecisionTreeModel import DTModel
+from XAI.modeling.models.RandomForestModel import RFModel
 
-# __all__ = ["SkinLesionCNN"]
-# 
+# Allow for direct imports from the modeling module
+__all__ = [
+    'BaseMLModel',
+    'DTModel',
+    'RFModel'
+]
