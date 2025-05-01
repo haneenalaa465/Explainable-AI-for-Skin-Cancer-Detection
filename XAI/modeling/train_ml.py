@@ -59,10 +59,23 @@ def train_ml_model(model_class, X_train, y_train, X_val, y_val, hyperparams=None
         print(f"Best parameters: {best_params}")
         
         # Create a new model with best parameters
+        # Filter parameters to only include those accepted by the model class
         if model_class == DTModel:
-            model = DTModel(**best_params)
+            # DTModel only accepts max_depth and random_state
+            filtered_params = {
+                'max_depth': best_params.get('max_depth', None),
+                'random_state': 0  # Keep default random_state
+            }
+            model = DTModel(**filtered_params)
         elif model_class == RFModel:
-            model = RFModel(**best_params)
+            # Filter parameters for RFModel according to its __init__ method
+            filtered_params = {
+                'n_estimators': best_params.get('n_estimators', 100),
+                'max_depth': best_params.get('max_depth', None),
+                'min_samples_split': best_params.get('min_samples_split', 2),
+                'random_state': 0  # Keep default random_state
+            }
+            model = RFModel(**filtered_params)
         
     else:
         # Create model with default or provided parameters
@@ -215,8 +228,10 @@ def main(model_idx=-1):
                 True
             )
             
-            # Update hyperparams with best parameters
-            model_config['hyperparams'].update(best_params)
+            # Store the full best parameters for reference, but don't use them directly
+            model_config['best_params'] = best_params
+            
+            # Note: We don't update hyperparams here as we're now filtering in train_ml_model
         else:
             model = train_ml_model(
                 model_class,
@@ -235,9 +250,10 @@ def main(model_idx=-1):
         # Save performance metrics
         save_results(model, X_test_scaled, y_test, class_names, model_name)
         
-        # Save hyperparameters
+        # Save hyperparameters (either original or best from grid search if used)
+        params_to_save = model_config.get('best_params', model_config['hyperparams'])
         with open(MODELS_DIR / f"{model_name}_{timestamp}_params.txt", 'w') as f:
-            for param, value in model_config['hyperparams'].items():
+            for param, value in params_to_save.items():
                 f.write(f"{param}: {value}\n")
 
 
