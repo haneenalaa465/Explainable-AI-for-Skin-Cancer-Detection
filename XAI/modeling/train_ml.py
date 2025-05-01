@@ -68,11 +68,9 @@ def train_ml_model(model_class, X_train, y_train, X_val, y_val, hyperparams=None
             }
             model = DTModel(**filtered_params)
         elif model_class == RFModel:
-            # Filter parameters for RFModel according to its __init__ method
+            # RFModel only accepts n_estimators and random_state
             filtered_params = {
                 'n_estimators': best_params.get('n_estimators', 100),
-                'max_depth': best_params.get('max_depth', None),
-                'min_samples_split': best_params.get('min_samples_split', 2),
                 'random_state': 0  # Keep default random_state
             }
             model = RFModel(**filtered_params)
@@ -231,7 +229,6 @@ def main(model_idx=-1):
             # Store the full best parameters for reference, but don't use them directly
             model_config['best_params'] = best_params
             
-            # Note: We don't update hyperparams here as we're now filtering in train_ml_model
         else:
             model = train_ml_model(
                 model_class,
