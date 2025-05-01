@@ -22,6 +22,7 @@ from XAI.preprocessing.contrast_stretch import ContrastStretch
 from skimage import io
 
 from XAI.config import (
+    INTERIM_DATA_DIR,
     RAW_DATA_DIR,
     HAM10000_METADATA,
     HAM10000_IMAGES_PART1,
