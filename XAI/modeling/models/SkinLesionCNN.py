@@ -5,7 +5,7 @@ CNN model for skin lesion classification based on the paper:
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from XAI.config import NUM_CLASSES
+from XAI.config import NUM_CLASSES, MODEL_INPUT_SIZE
 from XAI.modeling.models.Base_Model import BaseModel
 
 class SkinLesionCNN(BaseModel):
@@ -21,6 +21,10 @@ class SkinLesionCNN(BaseModel):
     def name():
         return "SkinLesionCNN"
 
+    @staticmethod
+    def inputSize():
+        return MODEL_INPUT_SIZE  # Use the model input size from config
+
     def __init__(self, num_classes=NUM_CLASSES):
         super(SkinLesionCNN, self).__init__()
         
@@ -29,7 +33,7 @@ class SkinLesionCNN(BaseModel):
             nn.Conv2d(3, 32, kernel_size=3, padding='same'),  # same padding
             nn.ReLU(),
             nn.BatchNorm2d(32),
-            nn.MaxPool2d(kernel_size=3, stride=3),  # 96x96 -> 32x32
+            nn.MaxPool2d(kernel_size=3, stride=3),  # Reduction by factor of 3
             nn.Dropout(0.25)
         )
         
@@ -57,12 +61,29 @@ class SkinLesionCNN(BaseModel):
         )
         
         # Calculate flattened feature size
+        # Use MODEL_INPUT_SIZE from config to calculate the correct flattened size
+        # Here we need to calculate the output size after all conv and pooling layers
         with torch.no_grad():
-            dummy_input = torch.zeros(1, 3, 96, 96)  # Assuming 96x96 input size from table
-            dummy_out = self._forward_conv_blocks(dummy_input)
-            self.flatten_dim = dummy_out.view(1, -1).size(1)
+            # Use the input size from the config
+            h, w = MODEL_INPUT_SIZE
+            
+            # First maxpool: kernel=3, stride=3
+            h = h // 3
+            w = w // 3
+            
+            # Second maxpool: kernel=2, stride=2
+            h = h // 2
+            w = w // 2
+            
+            # Third maxpool: kernel=2, stride=2
+            h = h // 2
+            w = w // 2
+            
+            # Calculate flattened size
+            self.flatten_dim = 128 * h * w
+            print(f"Calculated flattened dimension: {self.flatten_dim}")
         
-        # Fully connected layers
+        # Fully connected layers with dynamically calculated input size
         self.fc_block = nn.Sequential(
             nn.Linear(self.flatten_dim, 1024),
             nn.ReLU(),
@@ -70,8 +91,8 @@ class SkinLesionCNN(BaseModel):
             nn.Dropout(0.5)
         )
         
-        # Output layer with 7 units and softmax activation
-        self.classifier = nn.Linear(1024, 7)  # 7 units with softmax activation as per table
+        # Output layer with num_classes units
+        self.classifier = nn.Linear(1024, num_classes)
         
     def _forward_conv_blocks(self, x):
         x = self.conv_block1(x)
@@ -81,15 +102,16 @@ class SkinLesionCNN(BaseModel):
         
     def forward(self, x):
         x = self._forward_conv_blocks(x)
-        x = torch.flatten(x, 1)  # Explicit flatten layer as per table
+        # Flatten maintaining batch dimension
+        x = x.view(x.size(0), -1)
         x = self.fc_block(x)
         x = self.classifier(x)
-        return F.softmax(x, dim=1)  # Apply softmax activation
+        return x  # Remove softmax - CrossEntropyLoss expects logits
         
     def extract_features(self, x):
         """
         Extract features from the penultimate layer for explainability.
         """
         x = self._forward_conv_blocks(x)
-        x = torch.flatten(x, 1)
+        x = x.view(x.size(0), -1)
         return self.fc_block(x)
