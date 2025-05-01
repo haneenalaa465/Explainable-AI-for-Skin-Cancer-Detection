@@ -1,13 +1,22 @@
 from sklearn.ensemble import RandomForestClassifier
 from XAI.modeling.models.ML_Base_model import BaseMLModel
 
-
 class RFModel(BaseMLModel):
     """Random Forest model for skin lesion classification"""
     
-    def __init__(self, n_estimators=200, random_state=0):
-        self.model = RandomForestClassifier(n_estimators=n_estimators, random_state=random_state)
+    def __init__(self, n_estimators=100, random_state=0):
+        """
+        Initialize the Random Forest model
         
+        Args:
+            n_estimators: Number of trees in the forest
+            random_state: Random state for reproducibility
+        """
+        self.model = RandomForestClassifier(
+            n_estimators=n_estimators,
+            random_state=random_state
+        )
+    
     @staticmethod
     def name():
         return "RandomForest"
