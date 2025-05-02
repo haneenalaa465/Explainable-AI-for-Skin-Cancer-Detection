@@ -30,7 +30,7 @@ from XAI.config import (
 from XAI.dataset import prepare_data
 
 from XAI.modeling.ResizeLayer import ResizedModel
-from XAI.modeling.AllModels import models, device
+from XAI.modeling.AllModels import dl_models, device
 import datetime
 
 
@@ -427,13 +427,13 @@ def main(model_idx=-1):
     os.makedirs(MODELS_DIR, exist_ok=True)
     
     for i in range(
-        0 if model_idx == -1 else model_idx, len(models) if model_idx == -1 else model_idx + 1
+        0 if model_idx == -1 else model_idx, len(dl_models) if model_idx == -1 else model_idx + 1
     ):
-        print(f"Training Model {models[i].name()} with input size {models[i].inputSize()}")
-        currentModel = ResizedModel(models[i].inputSize(), models[i]()).to(device)
+        print(f"Training Model {dl_models[i].name()} with input size {dl_models[i].inputSize()}")
+        currentModel = ResizedModel(dl_models[i].inputSize(), dl_models[i]()).to(device)
         
         # Check if we have a saved model and load it
-        best_model_path, checkpoint = load_best_model(models[i].name())
+        best_model_path, checkpoint = load_best_model(dl_models[i].name())
         start_epoch = 0
         best_val_acc = 0.0
         
@@ -477,7 +477,7 @@ def main(model_idx=-1):
         history.append(currentHistory)
 
         # Plot training history
-        history_plot_path = FIGURES_DIR / f"training_{models[i].name()}_history.png"
+        history_plot_path = FIGURES_DIR / f"training_{dl_models[i].name()}_history.png"
         plot_training_history(currentHistory, save_path=history_plot_path)
 
         # Test model
