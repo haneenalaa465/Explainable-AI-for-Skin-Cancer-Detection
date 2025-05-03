@@ -15,7 +15,8 @@ class SkinEfficientNetB5(BaseModel):
             for param in self.backbone.parameters():
                 param.requires_grad = False
 
-        in_features = self.backbone.classifier.in_features
+        # Get the number of features from the model
+        in_features = self.backbone.classifier[1].in_features
         self.backbone.classifier = nn.Linear(in_features, num_classes)
 
     @staticmethod
