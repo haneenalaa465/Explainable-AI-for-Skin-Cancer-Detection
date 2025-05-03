@@ -188,7 +188,7 @@ class D2CNN(BaseModel):
         # Remove constant columns before correlation calculation
         stddev = np.std(combined_features, axis=0)
         combined_features = combined_features[:, stddev > 0]
-        
+
         # Remove duplicate features using correlation matrix
         corr_matrix = np.corrcoef(combined_features, rowvar=False)
         upper_tri = np.triu(np.ones_like(corr_matrix, dtype=bool), k=1)
@@ -204,7 +204,6 @@ class D2CNN(BaseModel):
         if to_drop:
             combined_features = np.delete(combined_features, to_drop, axis=1)
 
-        print (combined_features, combined_features.shape)
         combined_features = torch.from_numpy(combined_features).float().to(x.device)
         if combined_features.shape[1] != 64:
             # Calculate how many zeros need to be added

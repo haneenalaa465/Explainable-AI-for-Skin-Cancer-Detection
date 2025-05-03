@@ -51,7 +51,7 @@ train_ml:
 
 ## Explain Model Predictions
 explain:
-	$(PYTHON_INTERPRETER) -c "from XAI.modeling.predict import main; main()"
+	$(PYTHON_INTERPRETER) -c "from XAI.modeling.predict import main; main($(model_idx))"
 
 ## Test Model
 test:

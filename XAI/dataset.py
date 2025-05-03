@@ -180,6 +180,8 @@ def get_transforms(stage="train"):
         return v2.Compose(
             [
                 HairRemoval(),
+                # CLAHE(),
+                # EnhanceClarityCV(),
                 CLAHE(),
                 EnhanceClarityCV(),
                 ContrastStretch(),

@@ -3,6 +3,7 @@ Prediction script for the skin lesion classification model.
 """
 
 import os
+from pathlib import Path
 import numpy as np
 import torch
 from PIL import Image
@@ -16,7 +17,14 @@ import shap
 from tqdm import tqdm
 
 from XAI.config import MODELS_DIR, FIGURES_DIR, CLASS_NAMES, MODEL_INPUT_SIZE
+from XAI.dataset import get_transforms
+from XAI.modeling.ResizeLayer import ResizedModel
+from XAI.modeling.AllModels import models, device
+from XAI.modeling.train import load_best_model
 
+
+from pytorch_grad_cam import GradCAM, GradCAMPlusPlus
+from pytorch_grad_cam.utils.image import show_cam_on_image
 
 
 def load_model(model_path=None):
@@ -49,6 +57,24 @@ def load_model(model_path=None):
     return model
 
 
+def get_target_layers(model):
+    """
+    Dynamically get the target layers for GradCAM based on the model.
+
+    Args:
+        model: PyTorch model
+
+    Returns:
+        list: List of target layers
+    """
+    # Example: Dynamically find the last convolutional layer
+    for name, module in reversed(list(model.model.named_modules())):
+        if isinstance(module, torch.nn.Conv2d):
+            print(f"Using layer '{name}' for GradCAM")
+            return [module]
+    raise ValueError("No convolutional layer found in the model.")
+
+
 def preprocess_image(image, transform=None):
     """
     Preprocess an image for model prediction.
@@ -64,18 +90,8 @@ def preprocess_image(image, transform=None):
     if isinstance(image, Image.Image):
         image = np.array(image)
 
-    # Apply transformation if provided, otherwise use default
-    if transform is None:
-        transform = A.Compose(
-            [
-                A.Resize(MODEL_INPUT_SIZE[0], MODEL_INPUT_SIZE[1]),
-                A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-                ToTensorV2(),
-            ]
-        )
-
     # Apply transform
-    image_tensor = transform(image=image)["image"]
+    image_tensor = get_transforms("val")(image)
 
     # Add batch dimension
     image_tensor = image_tensor.unsqueeze(0)
@@ -83,7 +99,7 @@ def preprocess_image(image, transform=None):
     return image_tensor
 
 
-def predict_image(model, image, transform=None, device=None):
+def predict_image(model, image, transform=None):
     """
     Make a prediction for a single image.
 
@@ -96,10 +112,10 @@ def predict_image(model, image, transform=None, device=None):
     Returns:
         tuple: (predicted_class, class_name, probabilities)
     """
-    # Set device
-    if device is None:
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+    global device
+
+    print(device)
     # Move model to device
     model = model.to(device)
     model.eval()
@@ -247,11 +263,8 @@ def explain_prediction_lime(model, image, transform=None, num_samples=1000, save
             if len(img.shape) == 2:
                 img = np.stack([img, img, img], axis=2)
 
-            # Preprocess
-            if transform:
-                img_tensor = transform(image=img)["image"].unsqueeze(0)
-            else:
-                img_tensor = preprocess_image(img, transform)
+            img_tensor = preprocess_image(img, transform)
+            img_tensor = img_tensor.to(device)
 
             batch_tensors.append(img_tensor)
 
@@ -307,6 +320,12 @@ def explain_prediction_lime(model, image, transform=None, num_samples=1000, save
     return explanation
 
 
+def remove_inplace_from_model(model):
+    for module in model.modules():
+        if isinstance(module, torch.nn.ReLU):
+            module.inplace = False
+
+
 def explain_prediction_shap(model, image, bg_images=None, n_samples=100, save_path=None):
     """
     Explain the model's prediction using SHAP.
@@ -323,6 +342,7 @@ def explain_prediction_shap(model, image, bg_images=None, n_samples=100, save_pa
     """
     # Preprocess input image
     input_tensor = preprocess_image(image)
+    input_tensor = input_tensor.to(device)
 
     # Generate background if not provided
     if bg_images is None:
@@ -338,6 +358,7 @@ def explain_prediction_shap(model, image, bg_images=None, n_samples=100, save_pa
 
     # Set model to evaluation mode
     model.eval()
+    remove_inplace_from_model(model)
 
     # Create the DeepExplainer
     print("Creating SHAP explainer...")
@@ -345,6 +366,7 @@ def explain_prediction_shap(model, image, bg_images=None, n_samples=100, save_pa
 
     # Calculate SHAP values
     print("Calculating SHAP values...")
+    input_tensor.requires_grad_()
     shap_values = explainer.shap_values(input_tensor)
 
     # Get prediction
@@ -383,29 +405,93 @@ def explain_prediction_shap(model, image, bg_images=None, n_samples=100, save_pa
     return shap_values
 
 
-def main():
+def explain_prediction_gcam(model, image, save_path=None):
+    """
+    Explain the model's prediction using GradCam.
+
+    Args:
+        model: PyTorch model
+        image: PIL.Image or numpy.ndarray
+        layers: list of model's layers for explaination
+        save_path: Path to save the explanation
+    """
+
+    input_tensor = get_transforms("val")(image).unsqueeze(0)
+    print(input_tensor.shape)
+    target_layers = get_target_layers(model)
+
+    explainer = GradCAM(model=model, target_layers=target_layers)
+    with torch.enable_grad():
+        # Generate GradCAM heatmap
+        grayscale_cam = explainer(
+            input_tensor=input_tensor, targets=None
+        )  # Default target is the predicted class
+        grayscale_cam = grayscale_cam[0, :]  # Extract the first image's heatmap
+
+    # Convert image to numpy for visualization
+    image_np = np.array(image) / 255.0  # Normalize to [0, 1]
+    cam_image = show_cam_on_image(image_np, grayscale_cam, use_rgb=True)
+
+    # Save or display the GradCAM result
+    if save_path:
+        plt.imsave(save_path, cam_image)
+        print(f"GradCAM explanation saved to {save_path}")
+
+    plt.imshow(cam_image)
+    plt.axis("off")
+    plt.show()
+
+
+def main(model_idx=-1):
     """Main function for prediction and explanation."""
     # Load model
-    model = load_model()
+    for i in range(
+        0 if model_idx == -1 else model_idx, len(models) if model_idx == -1 else model_idx + 1
+    ):
+        model_name = models[i].name()
+        print(f"Explaining Model {model_name} with input size {models[i].inputSize()}")
 
-    # Example: Load an image for prediction
-    image_path = input("Enter path to test image: ")
-    image = Image.open(image_path).convert("RGB")
+        currentModel = ResizedModel(models[i].inputSize(), models[i]()).to(device)
+        # Check if we have a saved model and load it
+        best_model_path, checkpoint = load_best_model(models[i].name())
+        start_epoch = 0
+        best_val_acc = 0.0
 
-    # Make prediction
-    _, class_name, probabilities = predict_image(model, image)
+        if checkpoint is not None:
+            # Load model weights
+            currentModel.load_state_dict(checkpoint["model_state_dict"])
+        else:
+            raise Exception(
+                "You have to train the model\nPlease use make train to train all models or refer to the readme in the repository"
+            )
 
-    # Plot prediction
-    plot_path = FIGURES_DIR / "prediction_result.png"
-    plot_prediction(image, class_name, probabilities, save_path=plot_path)
+        # Example: Load an image for prediction
+        image_path = input("Enter path to test image: ")
+        image = np.array(Image.open(image_path).convert("RGB"))
 
-    # Explain prediction with LIME
-    lime_path = FIGURES_DIR / "lime_explanation.png"
-    explain_prediction_lime(model, image, save_path=lime_path)
+        image_path = Path(image_path)
 
-    # Explain prediction with SHAP
-    shap_path = FIGURES_DIR / "shap_explanation.png"
-    explain_prediction_shap(model, image, save_path=shap_path)
+        currentModel.eval()
+        for param in currentModel.parameters():
+            param.requires_grad = True
+        # Make prediction
+        _, class_name, probabilities = predict_image(currentModel, image)
+
+        # Plot prediction
+        plot_path = FIGURES_DIR / f"prediction_{image_path.stem}_result.png"
+        plot_prediction(image, class_name, probabilities, save_path=plot_path)
+
+        # Explain prediction with GradCam++
+        gradcam_path = FIGURES_DIR / f"gradcam_{image_path.stem}_explanation.png"
+        explain_prediction_gcam(currentModel, image, gradcam_path)
+
+        # Explain prediction with LIME
+        lime_path = FIGURES_DIR / f"lime_{image_path.stem}_explanation.png"
+        explain_prediction_lime(currentModel, image, save_path=lime_path)
+
+        # Explain prediction with SHAP
+        shap_path = FIGURES_DIR / f"shap_{image_path.stem}_explanation.png"
+        explain_prediction_shap(currentModel, image, save_path=shap_path)
 
 
 if __name__ == "__main__":

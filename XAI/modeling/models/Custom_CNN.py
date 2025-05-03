@@ -29,7 +29,7 @@ class CustomCNN(BaseModel):
             nn.Flatten(),
             nn.Linear(128 * 28 * 28, 256),
             nn.ReLU(),
-            nn.Dropout(0.5),
+            # nn.Dropout(0.5),
             nn.Linear(256, num_classes)
         )
     @staticmethod

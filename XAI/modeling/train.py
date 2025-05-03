@@ -446,7 +446,7 @@ def main(model_idx=-1):
         
         # Define loss function and optimizer
         optimizerModel = optim.Adam(currentModel.parameters(), lr=LEARNING_RATE)
-        # optimizerModel = optim.SGD(currentModel.parameters(), lr=LEARNING_RATE)
+        # optimizerModel = optim.SGD(currentModel.parameters(), lr=LEARNING_RATE, momentum=0.01)
         
         # Load optimizer state if available
         if checkpoint is not None and 'optimizer_state_dict' in checkpoint:
