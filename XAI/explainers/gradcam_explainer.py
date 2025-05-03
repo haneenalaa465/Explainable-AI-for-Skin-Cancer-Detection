@@ -16,7 +16,7 @@ class GradCamExplainer:
     A class to generate and visualize GradCAM explanations for image classification models.
     """
     
-    def __init__(self, model, target_layers=None, use_cuda=True, method='gradcam'):
+    def __init__(self, model, target_layers=None, method='gradcam'):
         """
         Initialize the GradCAM explainer.
         
@@ -24,25 +24,21 @@ class GradCamExplainer:
             model: PyTorch model
             target_layers: List of target layers for GradCAM
                           (if None, tries to find the last convolutional layer)
-            use_cuda: Whether to use CUDA if available
             method: 'gradcam' or 'gradcam++' to specify which method to use
         """
         self.model = model
         self.target_layers = target_layers or self._find_target_layers()
-        self.use_cuda = use_cuda and torch.cuda.is_available()
         
         # Initialize GradCAM
         if method.lower() == 'gradcam++':
             self.explainer = GradCAMPlusPlus(
                 model=model,
-                target_layers=self.target_layers,
-                use_cuda=self.use_cuda
+                target_layers=self.target_layers
             )
         else:  # Default to GradCAM
             self.explainer = GradCAM(
                 model=model,
-                target_layers=self.target_layers,
-                use_cuda=self.use_cuda
+                target_layers=self.target_layers
             )
         
     def _find_target_layers(self):

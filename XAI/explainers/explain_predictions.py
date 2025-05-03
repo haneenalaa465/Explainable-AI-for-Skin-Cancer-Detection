@@ -9,6 +9,7 @@ import torch
 from PIL import Image
 import matplotlib.pyplot as plt
 import argparse
+import traceback
 
 from XAI.config import (
     MODELS_DIR, 
@@ -20,7 +21,9 @@ from XAI.dataset import get_transforms
 from XAI.modeling.ResizeLayer import ResizedModel
 from XAI.modeling.AllModels import dl_models, device
 from XAI.modeling.train import load_best_model
-from XAI.explainers import LimeExplainer, ShapExplainer, GradCamExplainer
+from XAI.explainers.lime_explainer import LimeExplainer
+from XAI.explainers.shap_explainer import ShapExplainer
+from XAI.explainers.gradcam_explainer import GradCamExplainer
 
 def preprocess_image(image, transform=None):
     """
@@ -95,6 +98,107 @@ def create_explanation_directory(model_name):
     """
     explanations_dir = FIGURES_DIR / f"explanations_{model_name}"
     os.makedirs(explanations_dir, exist_ok=True)
+    return explanations_dir
+
+def explain_with_all_methods(model, image_path, save_dir=None, model_name=None):
+    """
+    Explain a prediction using all available explainability methods.
+    
+    Args:
+        model: PyTorch model
+        image_path: Path to the image file
+        save_dir: Directory to save explanations
+        model_name: Name of the model
+        
+    Returns:
+        dict: Dictionary with all explanations
+    """
+    # Load and preprocess image
+    image = np.array(Image.open(image_path).convert("RGB"))
+    transform = get_transforms("val")
+    image_tensor = transform(image)
+    
+    # Make prediction
+    pred_class, class_name, probabilities = predict_image(model, image_tensor, device)
+    print(f"Prediction: {class_name} (Class {pred_class})")
+    
+    # Create base save path
+    if save_dir is None:
+        save_dir = FIGURES_DIR
+    
+    if model_name is None:
+        model_name = getattr(model, 'name', lambda: 'unknown')()
+    
+    image_name = Path(image_path).stem
+    
+    # Create a preprocessing function for explainers
+    def preprocess_fn(img):
+        return transform(img)
+    
+    explanations = {}
+    
+    # 1. Generate LIME explanation
+    try:
+        print("\n=== Generating LIME explanation ===")
+        lime_explainer = LimeExplainer(model, device, CLASS_NAMES, preprocess_fn)
+        lime_exp = lime_explainer.explain(image, num_samples=1000)
+        lime_fig, _ = lime_explainer.visualize(
+            lime_exp, 
+            image, 
+            label=pred_class,
+            save_path=save_dir / f"lime_{model_name}_{image_name}.png"
+        )
+        explanations['lime'] = {'explanation': lime_exp, 'figure': lime_fig}
+    except Exception as e:
+        print(f"Error generating LIME explanation: {e}")
+        print(traceback.format_exc())
+    
+    # 2. Generate SHAP explanation
+    try:
+        print("\n=== Generating SHAP explanation ===")
+        shap_explainer = ShapExplainer(model, device, CLASS_NAMES, preprocess_fn)
+        shap_values = shap_explainer.explain(image, n_samples=50)
+        shap_fig, _ = shap_explainer.visualize(
+            shap_values, 
+            image, 
+            label=pred_class,
+            save_path=save_dir / f"shap_{model_name}_{image_name}.png"
+        )
+        explanations['shap'] = {'explanation': shap_values, 'figure': shap_fig}
+    except Exception as e:
+        print(f"Error generating SHAP explanation: {e}")
+        print(traceback.format_exc())
+    
+    # 3. Generate GradCAM explanation
+    try:
+        print("\n=== Generating GradCAM explanation ===")
+        gradcam_explainer = GradCamExplainer(model)
+        
+        # Add batch dimension and move to device
+        batch_tensor = image_tensor.unsqueeze(0).to(device)
+        
+        # Generate GradCAM heatmap
+        gradcam_heatmap = gradcam_explainer.explain(batch_tensor)
+        
+        # Convert image to [0, 1] range for visualization
+        normalized_image = image.astype(float) / 255
+        
+        # Visualize
+        gradcam_fig = plt.figure(figsize=(12, 5))
+        cam_image = gradcam_explainer.visualize(
+            gradcam_heatmap,
+            normalized_image,
+            class_name=class_name,
+            save_path=save_dir / f"gradcam_{model_name}_{image_name}.png"
+        )
+        explanations['gradcam'] = {'explanation': gradcam_heatmap, 'figure': gradcam_fig}
+    except Exception as e:
+        print(f"Error generating GradCAM explanation: {e}")
+        print(traceback.format_exc())
+    
+    print("\nAll explanations generated and saved to:")
+    print(f"  - {save_dir}")
+    
     return explanations
 
 
@@ -141,111 +245,17 @@ def main():
         os.makedirs(model_save_dir, exist_ok=True)
         
         # Generate explanations
-        explanations = explain_with_all_methods(
-            model, 
-            args.image, 
-            save_dir=model_save_dir,
-            model_name=model_name
-        )
+        try:
+            explanations = explain_with_all_methods(
+                model, 
+                args.image, 
+                save_dir=model_save_dir,
+                model_name=model_name
+            )
+        except Exception as e:
+            print(f"Error explaining model {model_name}: {e}")
+            print(traceback.format_exc())
 
 
 if __name__ == "__main__":
-    main()_dir
-
-def explain_with_all_methods(model, image_path, save_dir=None, model_name=None):
-    """
-    Explain a prediction using all available explainability methods.
-    
-    Args:
-        model: PyTorch model
-        image_path: Path to the image file
-        save_dir: Directory to save explanations
-        model_name: Name of the model
-        
-    Returns:
-        dict: Dictionary with all explanations
-    """
-    # Load and preprocess image
-    image = np.array(Image.open(image_path).convert("RGB"))
-    transform = get_transforms("val")
-    image_tensor = transform(image)
-    
-    # Make prediction
-    pred_class, class_name, probabilities = predict_image(model, image_tensor, device)
-    print(f"Prediction: {class_name} (Class {pred_class})")
-    
-    # Create base save path
-    if save_dir is None:
-        save_dir = FIGURES_DIR
-    
-    if model_name is None:
-        model_name = getattr(model, 'name', lambda: 'unknown')()
-    
-    image_name = Path(image_path).stem
-    
-    # Create a preprocessing function for explainers
-    def preprocess_fn(img):
-        return transform(img)
-    
-    # Initialize explainers
-    lime_explainer = LimeExplainer(model, device, CLASS_NAMES, preprocess_fn)
-    shap_explainer = ShapExplainer(model, device, CLASS_NAMES, preprocess_fn)
-    
-    # Find target layers for GradCAM
-    try:
-        gradcam_explainer = GradCamExplainer(model)
-    except ValueError as e:
-        print(f"Error initializing GradCAM: {e}")
-        print("Skipping GradCAM explanation.")
-        gradcam_explainer = None
-    
-    explanations = {}
-    
-    # 1. Generate LIME explanation
-    print("\n=== Generating LIME explanation ===")
-    lime_exp = lime_explainer.explain(image, num_samples=1000)
-    lime_fig, _ = lime_explainer.visualize(
-        lime_exp, 
-        image, 
-        label=pred_class,
-        save_path=save_dir / f"lime_{model_name}_{image_name}.png"
-    )
-    explanations['lime'] = {'explanation': lime_exp, 'figure': lime_fig}
-    
-    # 2. Generate SHAP explanation
-    print("\n=== Generating SHAP explanation ===")
-    shap_values = shap_explainer.explain(image, n_samples=50)
-    shap_fig, _ = shap_explainer.visualize(
-        shap_values, 
-        image, 
-        label=pred_class,
-        save_path=save_dir / f"shap_{model_name}_{image_name}.png"
-    )
-    explanations['shap'] = {'explanation': shap_values, 'figure': shap_fig}
-    
-    # 3. Generate GradCAM explanation if available
-    if gradcam_explainer is not None:
-        print("\n=== Generating GradCAM explanation ===")
-        # Add batch dimension and move to device
-        batch_tensor = image_tensor.unsqueeze(0).to(device)
-        
-        # Generate GradCAM heatmap
-        gradcam_heatmap = gradcam_explainer.explain(batch_tensor)
-        
-        # Convert image to [0, 1] range for visualization
-        normalized_image = image.astype(float) / 255
-        
-        # Visualize
-        gradcam_fig = plt.figure(figsize=(12, 5))
-        cam_image = gradcam_explainer.visualize(
-            gradcam_heatmap,
-            normalized_image,
-            class_name=class_name,
-            save_path=save_dir / f"gradcam_{model_name}_{image_name}.png"
-        )
-        explanations['gradcam'] = {'explanation': gradcam_heatmap, 'figure': gradcam_fig}
-    
-    print("\nAll explanations generated and saved to:")
-    print(f"  - {save_dir}")
-    
-    return explanations
+    main()
