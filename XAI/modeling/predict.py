@@ -19,7 +19,7 @@ from tqdm import tqdm
 from XAI.config import MODELS_DIR, FIGURES_DIR, CLASS_NAMES, MODEL_INPUT_SIZE
 from XAI.dataset import get_transforms
 from XAI.modeling.ResizeLayer import ResizedModel
-from XAI.modeling.AllModels import models, device
+from XAI.modeling.AllModels import dl_models, device
 from XAI.modeling.train import load_best_model
 
 
@@ -446,14 +446,14 @@ def main(model_idx=-1):
     """Main function for prediction and explanation."""
     # Load model
     for i in range(
-        0 if model_idx == -1 else model_idx, len(models) if model_idx == -1 else model_idx + 1
+        0 if model_idx == -1 else model_idx, len(dl_models) if model_idx == -1 else model_idx + 1
     ):
-        model_name = models[i].name()
-        print(f"Explaining Model {model_name} with input size {models[i].inputSize()}")
+        model_name = dl_models[i].name()
+        print(f"Explaining Model {model_name} with input size {dl_models[i].inputSize()}")
 
-        currentModel = ResizedModel(models[i].inputSize(), models[i]()).to(device)
+        currentModel = ResizedModel(dl_models[i].inputSize(), dl_models[i]()).to(device)
         # Check if we have a saved model and load it
-        best_model_path, checkpoint = load_best_model(models[i].name())
+        best_model_path, checkpoint = load_best_model(dl_models[i].name())
         start_epoch = 0
         best_val_acc = 0.0
 
