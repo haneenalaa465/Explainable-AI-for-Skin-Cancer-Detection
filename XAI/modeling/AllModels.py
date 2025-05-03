@@ -6,6 +6,7 @@ from XAI.modeling.models.Modified_inception import ModifiedInceptionV3
 from XAI.modeling.models.SkinResNet50 import FineTunedResNet50
 from XAI.modeling.models.SkinLesionCNN import SkinLesionCNN
 from XAI.modeling.models.custom_cnn_2 import SkinCancerCNN
+from XAI.modeling.models.SkinEfficientNetB5 import SkinEfficientNetB5
 
 # Machine Learning Models
 from XAI.modeling.models.DecisionTreeModel import DTModel
@@ -22,7 +23,8 @@ dl_models = [
     CustomCNN,
     ModifiedInceptionV3,
     FineTunedResNet50,
-    SkinCancerCNN
+    SkinCancerCNN,
+    SkinEfficientNetB5
 ]
 
 # Machine Learning models list with default hyperparameters
