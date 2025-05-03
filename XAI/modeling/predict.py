@@ -398,7 +398,6 @@ def explain_prediction_shap(model, image, bg_images=None, n_samples=32, save_pat
     shapImage(shap_values[0][0], image, show=False, width=10)
     plt.title("SHAP Values\nHigher values indicate more influence on prediction")
 
-
     # Save figure if path is provided
     if save_path:
         plt.savefig(save_path)
@@ -482,16 +481,16 @@ def main(model_idx=-1):
         _, class_name, probabilities = predict_image(currentModel, image)
 
         # Plot prediction
-        # plot_path = FIGURES_DIR / f"prediction_{image_path.stem}_{model_name}_result.png"
-        # plot_prediction(image, class_name, probabilities, save_path=plot_path)
+        plot_path = FIGURES_DIR / f"prediction_{image_path.stem}_{model_name}_result.png"
+        plot_prediction(image, class_name, probabilities, save_path=plot_path)
 
         # Explain prediction with GradCam++
-        # gradcam_path = FIGURES_DIR / f"gradcam_{image_path.stem}_{model_name}_explanation.png"
-        # explain_prediction_gcam(currentModel, image, gradcam_path)
+        gradcam_path = FIGURES_DIR / f"gradcam_{image_path.stem}_{model_name}_explanation.png"
+        explain_prediction_gcam(currentModel, image, gradcam_path)
 
         # Explain prediction with LIME
-        # lime_path = FIGURES_DIR / f"lime_{image_path.stem}_{model_name}_explanation.png"
-        # explain_prediction_lime(currentModel, image, save_path=lime_path)
+        lime_path = FIGURES_DIR / f"lime_{image_path.stem}_{model_name}_explanation.png"
+        explain_prediction_lime(currentModel, image, save_path=lime_path)
 
         # Explain prediction with SHAP
         shap_path = FIGURES_DIR / f"shap_{image_path.stem}_{model_name}_explanation.png"
