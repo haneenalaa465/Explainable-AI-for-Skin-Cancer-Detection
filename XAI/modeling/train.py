@@ -54,7 +54,7 @@ def train_model(
     scheduler,
     device,
     num_epochs=NUM_EPOCHS,
-    model_save=None,
+    model_save=False,
     regularizer_fn=None,
     is_binary=False,
     start_epoch=0,
