@@ -443,6 +443,41 @@ def explain_prediction_gcam(model, image, save_path=None):
     plt.imshow(cam_image)
     plt.axis("off")
     plt.show()
+def explain_prediction_gcamPP(model, image, save_path=None):
+    """
+    Explain the model's prediction using GradCam.
+
+    Args:
+        model: PyTorch model
+        image: PIL.Image or numpy.ndarray
+        layers: list of model's layers for explaination
+        save_path: Path to save the explanation
+    """
+
+    input_tensor = get_transforms("val")(image).unsqueeze(0)
+    print(input_tensor.shape)
+    target_layers = get_target_layers(model)
+
+    explainer = GradCAMPlusPlus(model=model, target_layers=target_layers)
+    with torch.enable_grad():
+        # Generate GradCAM heatmap
+        grayscale_cam = explainer(
+            input_tensor=input_tensor, targets=None
+        )  # Default target is the predicted class
+        grayscale_cam = grayscale_cam[0, :]  # Extract the first image's heatmap
+
+    # Convert image to numpy for visualization
+    image_np = np.array(image) / 255.0  # Normalize to [0, 1]
+    cam_image = show_cam_on_image(image_np, grayscale_cam, use_rgb=True)
+
+    # Save or display the GradCAM result
+    if save_path:
+        plt.imsave(save_path, cam_image)
+        print(f"GradCAM explanation saved to {save_path}")
+
+    plt.imshow(cam_image)
+    plt.axis("off")
+    plt.show()
 
 
 def main(model_idx=-1):
@@ -484,9 +519,13 @@ def main(model_idx=-1):
         plot_path = FIGURES_DIR / f"prediction_{image_path.stem}_{model_name}_result.png"
         plot_prediction(image, class_name, probabilities, save_path=plot_path)
 
-        # Explain prediction with GradCam++
+        # Explain prediction with GradCam
         gradcam_path = FIGURES_DIR / f"gradcam_{image_path.stem}_{model_name}_explanation.png"
         explain_prediction_gcam(currentModel, image, gradcam_path)
+        
+        # Explain prediction with GradCam
+        gradcam_path = FIGURES_DIR / f"gradcam++_{image_path.stem}_{model_name}_explanation.png"
+        explain_prediction_gcamPP(currentModel, image, gradcam_path)
 
         # Explain prediction with LIME
         lime_path = FIGURES_DIR / f"lime_{image_path.stem}_{model_name}_explanation.png"
