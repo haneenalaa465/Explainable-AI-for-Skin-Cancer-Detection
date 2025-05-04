@@ -14,6 +14,7 @@ import lime
 from lime import lime_image
 from skimage.segmentation import mark_boundaries
 import shap
+from shap.plots import image as shapImage
 from tqdm import tqdm
 
 from XAI.config import MODELS_DIR, FIGURES_DIR, CLASS_NAMES, MODEL_INPUT_SIZE
@@ -326,7 +327,7 @@ def remove_inplace_from_model(model):
             module.inplace = False
 
 
-def explain_prediction_shap(model, image, bg_images=None, n_samples=100, save_path=None):
+def explain_prediction_shap(model, image, bg_images=None, n_samples=32, save_path=None):
     """
     Explain the model's prediction using SHAP.
 
@@ -343,6 +344,7 @@ def explain_prediction_shap(model, image, bg_images=None, n_samples=100, save_pa
     # Preprocess input image
     input_tensor = preprocess_image(image)
     input_tensor = input_tensor.to(device)
+    print(f"{input_tensor.device} {device}")
 
     # Generate background if not provided
     if bg_images is None:
@@ -357,43 +359,44 @@ def explain_prediction_shap(model, image, bg_images=None, n_samples=100, save_pa
         bg_tensor = torch.cat(bg_tensors, dim=0)
 
     # Set model to evaluation mode
+    bg_tensor = bg_tensor.to(device)
     model.eval()
     remove_inplace_from_model(model)
 
-    # Create the DeepExplainer
-    print("Creating SHAP explainer...")
-    explainer = shap.DeepExplainer(model, bg_tensor)
+    with torch.no_grad():
+        # Create the DeepExplainer
+        print("Creating SHAP explainer...")
+        print(f"{bg_tensor.device} {device}")
+        explainer = shap.DeepExplainer(model, bg_tensor)
 
     # Calculate SHAP values
+
     print("Calculating SHAP values...")
-    input_tensor.requires_grad_()
     shap_values = explainer.shap_values(input_tensor)
 
     # Get prediction
-    _, class_name, _ = predict_image(model, image)
+    predicted_class_idx, class_name, _ = predict_image(model, image)
 
     # Plot the explanation
-    plt.figure(figsize=(10, 6))
+    # plt.figure(figsize=(10, 6))
 
     # Combine the three RGB channels for visualization
     shap_combined = np.sum(np.abs(shap_values), axis=0)
 
-    # Display original image
-    plt.subplot(1, 2, 1)
-    if isinstance(image, Image.Image):
-        plt.imshow(image)
-    else:
-        plt.imshow(image)
-    plt.title(f"Original Image\nPrediction: {class_name}")
-    plt.axis("off")
+    # # Display original image
+    # plt.subplot(1, 2, 1)
+    # if isinstance(image, Image.Image):
+    #     plt.imshow(image)
+    # else:
+    #     plt.imshow(image)
+    # plt.title(f"Original Image\nPrediction: {class_name}")
+    # plt.axis("off")
 
     # Display SHAP values
-    plt.subplot(1, 2, 2)
-    plt.imshow(shap_combined[0].transpose(1, 2, 0), cmap="viridis")
+    # shap_values = [np.swapaxes(np.swapaxes(s, 2, 3), 1, -1) for s in shap_values]
+    # plt.subplot(1, 2, 2)
+    shapImage(shap_values[0][0], image, show=False, width=10)
     plt.title("SHAP Values\nHigher values indicate more influence on prediction")
-    plt.axis("off")
-
-    plt.tight_layout()
 
     # Save figure if path is provided
     if save_path:
@@ -478,19 +481,19 @@ def main(model_idx=-1):
         _, class_name, probabilities = predict_image(currentModel, image)
 
         # Plot prediction
-        plot_path = FIGURES_DIR / f"prediction_{image_path.stem}_result.png"
+        plot_path = FIGURES_DIR / f"prediction_{image_path.stem}_{model_name}_result.png"
         plot_prediction(image, class_name, probabilities, save_path=plot_path)
 
         # Explain prediction with GradCam++
-        gradcam_path = FIGURES_DIR / f"gradcam_{image_path.stem}_explanation.png"
+        gradcam_path = FIGURES_DIR / f"gradcam_{image_path.stem}_{model_name}_explanation.png"
         explain_prediction_gcam(currentModel, image, gradcam_path)
 
         # Explain prediction with LIME
-        lime_path = FIGURES_DIR / f"lime_{image_path.stem}_explanation.png"
+        lime_path = FIGURES_DIR / f"lime_{image_path.stem}_{model_name}_explanation.png"
         explain_prediction_lime(currentModel, image, save_path=lime_path)
 
         # Explain prediction with SHAP
-        shap_path = FIGURES_DIR / f"shap_{image_path.stem}_explanation.png"
+        shap_path = FIGURES_DIR / f"shap_{image_path.stem}_{model_name}_explanation.png"
         explain_prediction_shap(currentModel, image, save_path=shap_path)
 
 
