@@ -13,6 +13,9 @@ VENV_DIR = $(PROJECT_DIR)/venv
 
 model_idx?= -1
 ml_model_idx?= -1
+explain_image?=
+explain_dir?=
+explain_model?= RandomForest
 
 ifeq (,$(shell which conda))
 	HAS_CONDA=False
@@ -52,6 +55,50 @@ train_ml:
 ## Explain Model Predictions
 explain:
 	$(PYTHON_INTERPRETER) -c "from XAI.modeling.predict import main; main($(model_idx))"
+
+## Explain Machine Learning Model Predictions
+explain_ml:
+ifdef explain_image
+	$(PYTHON_INTERPRETER) -c "from XAI.explain_ml import main; import sys; sys.argv = ['', '--image', '$(explain_image)', '--model', '$(explain_model)']; main()"
+else
+ifdef explain_dir
+	$(PYTHON_INTERPRETER) -c "from XAI.explain_ml import main; import sys; sys.argv = ['', '--image_dir', '$(explain_dir)', '--model', '$(explain_model)']; main()"
+else
+	@echo "Error: Please provide either explain_image=<path_to_image> or explain_dir=<path_to_directory>"
+endif
+endif
+
+## Run Feature Importance Analysis
+feature_importance:
+ifdef explain_image
+	$(PYTHON_INTERPRETER) -c "from XAI.explainability.feature_importance import main; import sys; sys.argv = ['', '--image', '$(explain_image)', '--model', '$(explain_model)']; main()"
+else
+	@echo "Error: Please provide explain_image=<path_to_image>"
+endif
+
+## Run LIME Analysis
+lime_explain:
+ifdef explain_image
+	$(PYTHON_INTERPRETER) -c "from XAI.explainability.lime_explainer import main; import sys; sys.argv = ['', '--image', '$(explain_image)', '--model', '$(explain_model)']; main()"
+else
+	@echo "Error: Please provide explain_image=<path_to_image>"
+endif
+
+## Run SHAP Analysis
+shap_explain:
+ifdef explain_image
+	$(PYTHON_INTERPRETER) -c "from XAI.explainability.shap_explainer import main; import sys; sys.argv = ['', '--image', '$(explain_image)', '--model', '$(explain_model)']; main()"
+else
+	@echo "Error: Please provide explain_image=<path_to_image>"
+endif
+
+## Run PDP Analysis
+pdp_explain:
+ifdef explain_image
+	$(PYTHON_INTERPRETER) -c "from XAI.explainability.pdp_explainer import main; import sys; sys.argv = ['', '--image', '$(explain_image)', '--model', '$(explain_model)']; main()"
+else
+	$(PYTHON_INTERPRETER) -c "from XAI.explainability.pdp_explainer import main; import sys; sys.argv = ['', '--report', '--model', '$(explain_model)']; main()"
+endif
 
 ## Test Model
 test:
