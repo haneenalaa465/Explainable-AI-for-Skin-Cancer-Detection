@@ -468,7 +468,7 @@ def main(model_idx=-1):
             scheduler,
             device,
             num_epochs=NUM_EPOCHS,
-            model_save=True,
+            model_save=False,
             is_binary=isBinary,
             start_epoch=start_epoch,
             best_val_acc=best_val_acc,  # Pass the best accuracy from previous runs
