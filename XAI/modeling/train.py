@@ -54,7 +54,7 @@ def train_model(
     scheduler,
     device,
     num_epochs=NUM_EPOCHS,
-    model_save=False,
+    model_save=None,
     regularizer_fn=None,
     is_binary=False,
     start_epoch=0,
@@ -468,7 +468,7 @@ def main(model_idx=-1):
             scheduler,
             device,
             num_epochs=NUM_EPOCHS,
-            model_save=False,
+            model_save=True,
             is_binary=isBinary,
             start_epoch=start_epoch,
             best_val_acc=best_val_acc,  # Pass the best accuracy from previous runs
