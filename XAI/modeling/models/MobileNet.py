@@ -6,7 +6,12 @@ from torchvision.models.mobilenet import MobileNet_V2_Weights
 from XAI.config import NUM_CLASSES
 from XAI.modeling.models.Base_Model import BaseModel
 
+
 class MobileNetV2(BaseModel):
+    """
+    Towards Domain-Specific Explainable AI: Model Interpretation of a Skin Image Classifier using a Human Approach
+    """
+
     def __init__(self, num_classes=NUM_CLASSES, freeze_backbone=True):
         super(MobileNetV2, self).__init__()
 

@@ -7,10 +7,7 @@ from pathlib import Path
 import numpy as np
 import torch
 from PIL import Image
-import albumentations as A
-from albumentations.pytorch import ToTensorV2
 import matplotlib.pyplot as plt
-import lime
 from lime import lime_image
 from skimage.segmentation import mark_boundaries
 import shap

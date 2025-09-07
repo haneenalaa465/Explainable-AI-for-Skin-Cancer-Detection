@@ -7,6 +7,9 @@ from XAI.modeling.models.Base_Model import BaseModel
 
 
 class CustomCNN(BaseModel):
+    """
+    A robust CNN Deep Learning and InceptionV3 model Techniques for Enhanced Skin Cancer Detection
+    """
     def __init__(self, num_classes=NUM_CLASSES):
         super(CustomCNN, self).__init__()
 

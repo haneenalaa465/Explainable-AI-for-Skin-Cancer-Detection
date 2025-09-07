@@ -166,7 +166,7 @@ def get_transforms(stage="train"):
                 HairRemoval(),
                 CLAHE(),
                 EnhanceClarityCV(),
-                ContrastStretch(),
+                # ContrastStretch(),
                 v2.ToImage(),  # If using tensor transforms afterwards
                 v2.RandomHorizontalFlip(p=0.5),
                 v2.RandomVerticalFlip(p=0.5),
@@ -183,8 +183,8 @@ def get_transforms(stage="train"):
                 # CLAHE(),
                 # EnhanceClarityCV(),
                 CLAHE(),
-                EnhanceClarityCV(),
-                ContrastStretch(),
+                # EnhanceClarityCV(),
+                # ContrastStretch(),
                 v2.ToImage(),  # If using tensor transforms afterwards
                 v2.ToDtype(torch.float32, scale=True),
                 v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
@@ -242,7 +242,7 @@ def prepare_data(metadata_path=None, balanced=True, is_binary=False):
     )
 
     val_df, test_df = train_test_split(
-        temp_df, test_size=0.5, random_state=RANDOM_SEED, stratify=temp_df["dx"]
+        temp_df,test_size=0.5, random_state=RANDOM_SEED, stratify=temp_df["dx"]
     )
 
     print(f"Train set: {len(train_df)} images")

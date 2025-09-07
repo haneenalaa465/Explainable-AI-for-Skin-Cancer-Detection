@@ -5,6 +5,10 @@ from XAI.config import NUM_CLASSES
 from XAI.modeling.models.Base_Model import BaseModel
 
 class SkinCancerCNN(BaseModel):
+    """
+    An Interpretable Skin Cancer Classification Using Optimized Convolutional Neural Network for a Smart Healthcare System
+    
+    """
     def __init__(self, num_classes=NUM_CLASSES):
         super(SkinCancerCNN, self).__init__()
         

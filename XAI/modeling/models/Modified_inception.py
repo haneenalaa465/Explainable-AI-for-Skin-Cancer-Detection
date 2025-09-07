@@ -7,6 +7,9 @@ from XAI.modeling.models.Base_Model import BaseModel
 
 
 class ModifiedInceptionV3(BaseModel):
+    """
+    A robust CNN Deep Learning and InceptionV3 model Techniques for Enhanced Skin Cancer Detection
+    """
     def __init__(self, num_classes=NUM_CLASSES):
         super(ModifiedInceptionV3, self).__init__()
         self.base_model = models.inception_v3(weights=models.Inception_V3_Weights.IMAGENET1K_V1)

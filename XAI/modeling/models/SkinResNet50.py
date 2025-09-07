@@ -18,6 +18,9 @@ def replace_relu_with_non_inplace(module):
 
 
 class FineTunedResNet50(BaseModel):
+    """
+    Aspects of Lighting and Color in Classifying Malignant Skin Cancer with Deep Learning
+    """
     def __init__(self, num_classes=NUM_CLASSES, freeze_backbone=True):
         super(FineTunedResNet50, self).__init__()
 

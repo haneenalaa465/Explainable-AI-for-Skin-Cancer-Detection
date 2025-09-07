@@ -6,6 +6,9 @@ from XAI.config import NUM_CLASSES
 from XAI.modeling.models.Base_Model import BaseModel
 
 class SkinEfficientNetB5(BaseModel):
+    """
+    Comparing popular CNN models for an imbalanced dataset of Dermoscopic Images
+    """
     def __init__(self, num_classes=NUM_CLASSES, freeze_backbone=True):
         super(SkinEfficientNetB5, self).__init__()
 
